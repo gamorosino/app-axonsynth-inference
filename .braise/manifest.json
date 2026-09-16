@@ -1,0 +1,129 @@
+{
+  "name": "axonsynth-inference",
+  "github": "gamorosino/app-axonsynth-inference",
+  "github_branch": "main",
+  "desc": "3D axon segmentation inference on a light-sheet microscopy (LSM) volume using AxonSynth's primary three_class_v2 MONAI 3D U-Net (background/shell/interior, collapsed to binary foreground). Runs with or without a GPU: falls back to CPU automatically unless require_cuda is set.",
+  "config": {
+    "input_volume": {
+      "type": "input",
+      "file_id": "image",
+      "input_id": "input_volume"
+    },
+    "skip_prepare": {
+      "id": "skip_prepare",
+      "type": "boolean",
+      "placeholder": "",
+      "advanced": false,
+      "desc": "Skip the anisotropic-to-isotropic resample step; use only when input_volume is already isotropic at model spacing (0.8um by default).",
+      "default": false
+    },
+    "target_spacing": {
+      "id": "target_spacing",
+      "type": "number",
+      "placeholder": "0.8",
+      "advanced": true,
+      "desc": "Target isotropic voxel size in microns for the prepare step. Ignored if skip_prepare is true.",
+      "default": 0.8
+    },
+    "axis_order": {
+      "id": "axis_order",
+      "type": "string",
+      "placeholder": "2,0,1",
+      "advanced": true,
+      "desc": "Comma-separated permutation of 0,1,2 mapping model axes to source axes for the prepare step. Ignored if skip_prepare is true.",
+      "default": "2,0,1"
+    },
+    "assume_source_units_micron": {
+      "id": "assume_source_units_micron",
+      "type": "boolean",
+      "placeholder": "",
+      "advanced": true,
+      "desc": "Treat source NIfTI header zoom values as microns when the header does not declare micron units. Ignored if skip_prepare is true.",
+      "default": true
+    },
+    "roi_size": {
+      "id": "roi_size",
+      "type": "number",
+      "placeholder": "128",
+      "advanced": true,
+      "desc": "Isotropic sliding-window ROI size used during inference.",
+      "default": 128
+    },
+    "sw_batch_size": {
+      "id": "sw_batch_size",
+      "type": "number",
+      "placeholder": "4",
+      "advanced": true,
+      "desc": "Sliding-window inference batch size.",
+      "default": 4
+    },
+    "overlap": {
+      "id": "overlap",
+      "type": "number",
+      "placeholder": "0.5",
+      "advanced": true,
+      "desc": "Sliding-window overlap fraction (0 to <1).",
+      "default": 0.5
+    },
+    "threshold": {
+      "id": "threshold",
+      "type": "number",
+      "placeholder": "0.5",
+      "advanced": false,
+      "desc": "Foreground probability threshold applied to produce the binary segmentation.",
+      "default": 0.5
+    },
+    "stitch_device": {
+      "id": "stitch_device",
+      "type": "string",
+      "placeholder": "model",
+      "advanced": true,
+      "desc": "Device used to stitch sliding-window logits: 'model' (default, same device as the model) or 'cpu' (for volumes that exceed GPU memory when stitched).",
+      "default": "model"
+    },
+    "output_profile": {
+      "id": "output_profile",
+      "type": "string",
+      "placeholder": "binary_focused",
+      "advanced": true,
+      "desc": "'binary_focused' (default) writes only the collapsed foreground probability/mask; 'full' additionally writes the three-class argmax, shell, and interior masks.",
+      "default": "binary_focused"
+    },
+    "require_cuda": {
+      "id": "require_cuda",
+      "type": "boolean",
+      "placeholder": "",
+      "advanced": false,
+      "desc": "Fail instead of silently falling back to CPU when no GPU is available on the compute resource.",
+      "default": false
+    },
+    "additional_thresholds": {
+      "id": "additional_thresholds",
+      "type": "string",
+      "placeholder": "",
+      "advanced": true,
+      "desc": "Comma-separated LABEL=VALUE pairs for extra binary masks at additional probability thresholds, e.g. '0p94=0.94'. Empty means none.",
+      "default": ""
+    }
+  },
+  "inputs": [
+    {
+      "id": "input_volume",
+      "desc": "Raw or already-prepared 3D LSM microscopy volume (NIfTI).",
+      "datatype": "neuro/microscopy/nifti",
+      "datatype_tags": [],
+      "optional": false,
+      "multi": false,
+      "advanced": false
+    }
+  ],
+  "outputs": [
+    {
+      "id": "segmentation",
+      "desc": "Predicted binary axon segmentation (AxonSynth three_class_v2, shell+interior collapsed to foreground) as parc.nii.gz, with label.json, plus the foreground probability map and inference metadata as extra files.",
+      "datatype": "neuro/parcellation/volume",
+      "datatype_tags": [],
+      "archive": true
+    }
+  ]
+}

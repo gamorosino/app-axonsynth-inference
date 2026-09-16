@@ -1,0 +1,15 @@
+{
+  "input_volume": "image.nii.gz",
+  "skip_prepare": false,
+  "target_spacing": 0.8,
+  "axis_order": "2,0,1",
+  "assume_source_units_micron": true,
+  "roi_size": 128,
+  "sw_batch_size": 4,
+  "overlap": 0.5,
+  "threshold": 0.5,
+  "stitch_device": "model",
+  "output_profile": "binary_focused",
+  "require_cuda": false,
+  "additional_thresholds": ""
+}
