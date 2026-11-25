@@ -1,4 +1,16 @@
-# axonsynth-inference
+<h1 align="center">axonsynth-inference</h1>
+
+<p align="center">
+  Segments axons in a 3D light-sheet microscopy volume with the AxonSynth three_class_v2 MONAI 3D U-Net, after optional resampling to isotropic voxels, and outputs a binary axon mask and probability map.
+</p>
+
+<p align="center">
+  <a href="https://github.com/brainlife/abcd-spec"><img src="https://img.shields.io/badge/ABCD_Spec-v1.1-green.svg" alt="ABCD Spec v1.1"></a>
+  <a href="https://doi.org/10.25663/brainlife.app.974"><img src="https://img.shields.io/badge/Brainlife-brainlife.app.974-blue.svg" alt="Run on brainlife.io"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-see_LICENSE-lightgrey.svg" alt="License"></a>
+</p>
+
+## At a glance
 
 <!-- brainlife-app:begin (generated from the App manifest; edit the manifest, not this block) -->
 
@@ -8,26 +20,26 @@ Optionally resamples an anisotropic LSM NIfTI to isotropic model space (default 
 
 | | |
 |---|---|
-| 📥 **Inputs** | `neuro/microscopy/nifti` |
-| 📤 **Outputs** | `neuro/parcellation/volume` |
-| 🐳 **Container** | `gamorosino/app-axonsynth-inference:0.1` |
-| ⚙️ **Resources** | 4 GB memory · 1 h walltime |
-| 🔗 **Run it** | [doi.org/10.25663/brainlife.app.974](https://doi.org/10.25663/brainlife.app.974) |
+| **Inputs** | `neuro/microscopy/nifti` |
+| **Outputs** | `neuro/parcellation/volume` |
+| **Container** | `gamorosino/app-axonsynth-inference:0.1` |
+| **Resources** | 4 GB memory · 1 h walltime |
+| **Run it** | [doi.org/10.25663/brainlife.app.974](https://doi.org/10.25663/brainlife.app.974) |
 
-#### 📥 Inputs
+#### Inputs
 
 | Input | Datatype | Required | Description |
 |---|---|---|---|
 | `input_volume` | `neuro/microscopy/nifti` | yes | Raw or already-prepared 3D LSM microscopy volume (NIfTI). |
 
-#### 📤 Outputs
+#### Outputs
 
 | Output | Datatype | Description |
 |---|---|---|
 | `segmentation` | `neuro/parcellation/volume` | Predicted binary axon segmentation (AxonSynth three_class_v2, shell+interior collapsed to foreground) as parc.nii.gz, with label.json, plus the foreground probability map and inference metadata as extra files. |
 
 <details>
-<summary><b>⚙️ Parameters</b> (12)</summary>
+<summary><b>Parameters</b> (12)</summary>
 
 | Parameter | Type | Default | Description |
 |---|---|---|---|
@@ -48,23 +60,42 @@ Optionally resamples an anisotropic LSM NIfTI to isotropic model space (default 
 
 <!-- brainlife-app:end -->
 
-3D axon segmentation inference on a light-sheet microscopy (LSM) volume using
-[lincbrain/axonsynth](https://github.com/lincbrain/axonsynth)'s primary
-`three_class_v2` MONAI 3D U-Net (background / axon shell / axon interior,
-collapsed to a binary foreground for the main output). Runs with or without a
-GPU: inference falls back to CPU automatically unless `require_cuda` is set.
+## Running the App
 
-## Inputs
+### On brainlife.io
 
-- `input_volume` (neuro/microscopy/nifti) -- raw or already-prepared 3D LSM
-  volume.
+Open the App at [doi.org/10.25663/brainlife.app.974](https://doi.org/10.25663/brainlife.app.974), choose `neuro/microscopy/nifti` from your project, set the parameters and press **Execute**. The results are saved to your project as `neuro/parcellation/volume`.
 
-## Outputs
+### Locally
 
-- `segmentation` (neuro/parcellation/volume) -- `parc.nii.gz` (binary axon
-  mask) + `label.json`, plus `pred_prob.nii.gz` (foreground probability map)
-  and `inference_metadata.json` as extra files in the same output. Chains
-  directly into `app-seg-eval-metrics`'s `moving_parc` input.
+You need [Singularity/Apptainer](https://apptainer.org/) (the App runs in `gamorosino/app-axonsynth-inference:0.1`), [`jq`](https://jqlang.github.io/jq/).
+
+1. Clone this repository.
+2. Create `config.json` with the paths to your inputs and the parameters:
+
+   ```json
+   {
+       "input_volume": "/path/to/input_volume/input_volume",
+       "skip_prepare": false,
+       "target_spacing": 0.8,
+       "axis_order": "2,0,1",
+       "assume_source_units_micron": true,
+       "roi_size": 128,
+       "sw_batch_size": 4,
+       "overlap": 0.5,
+       "threshold": 0.5,
+       "stitch_device": "model",
+       "output_profile": "binary_focused",
+       "require_cuda": false,
+       "additional_thresholds": ""
+   }
+   ```
+
+3. Run `./main`.
+
+## Troubleshooting
+
+- **no output produced**: Check the log for errors in the prepare or inference step (e.g. wrong axis_order or missing GPU with require_cuda).
 
 ## Pipeline
 
@@ -75,31 +106,18 @@ GPU: inference falls back to CPU automatically unless `require_cuda` is set.
    `three_class_v2` checkpoint and writes the foreground probability map and
    thresholded binary mask.
 
-## Usage
+## Citing
 
-Brainlife.io: run via `braise-app-run`/`braise-app-pipeline` (once registered
-with `braise-app-create`), or the web UI.
+If you use this App, please cite it, the software it builds on and brainlife.io:
 
-Locally (outside brainlife): copy `config.json.example` to `config.json`,
-fill in real file paths, then run `./main` from this directory. `main` pulls
-its own container (`singularity exec --nv docker://...`) -- no local install
-of torch/monai needed, only Singularity itself. The `--nv` flag is a no-op
-when no NVIDIA driver is present, so the same container runs CPU-only too.
-
-Entrypoint: `main.py`
+- axonsynth-inference. brainlife.io App. [doi:10.25663/brainlife.app.974](https://doi.org/10.25663/brainlife.app.974)
+- Hayashi S, Caron BA, Heinsfeld AS, et al. brainlife.io: a decentralized and open-source cloud platform to support neuroscience research. *Nature Methods* 21:809–813 (2024). [doi:10.1038/s41592-024-02237-2](https://doi.org/10.1038/s41592-024-02237-2)
+- Avesani P, McPherson B, Hayashi S, et al. The open diffusion data derivatives, brain data upcycling via integrated publishing of derivatives and reproducible open cloud services. *Scientific Data* 6:69 (2019). [doi:10.1038/s41597-019-0073-y](https://doi.org/10.1038/s41597-019-0073-y)
 
 ## Authors
 
-- Gabriele Amorosino <ga24643@eid.utexas.edu>
+- Gabriele Amorosino
 
 ## License
 
-MIT, see `LICENSE`, except `prepare_lsm_full.py` and `infer_lsm.py`, which
-are vendored verbatim from
-[lincbrain/axonsynth](https://github.com/lincbrain/axonsynth) at commit
-[`335a354`](https://github.com/lincbrain/axonsynth/tree/335a354ad6681c85c1c3ffabc75325d08e1285f2/inference).
-That upstream repo has no LICENSE file of its own. The baked-in
-`three_class_v2` checkpoint (`three_class_v2_best_model.pt`) is likewise from
-that project; its own `repro/checkpoints/three_class_v2_best.json` marks it
-`"availability": "local_only"` -- it is not otherwise redistributed by the
-upstream project.
+See [LICENSE](LICENSE).
